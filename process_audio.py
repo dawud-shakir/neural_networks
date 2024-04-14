@@ -1,4 +1,5 @@
-# process_audio.py
+# original_process_audio.py 
+
 
 import sys
 import os
@@ -16,8 +17,8 @@ import matplotlib.pyplot as plt
 
 def plot_spectrogram(title, y, sr, hop_length, y_axis = "linear"):
     plt.figure(figsize=(10,6))
-    librosa.display.specshow(y, sr = sr, hop_length = hop_length, x_axis = "time", y_axis = y_axis,  cmap='gray_r')
-    plt.colorbar(format="%+2.f dB")
+    librosa.display.specshow(y, sr = sr, hop_length = hop_length, x_axis = "time", y_axis = y_axis)
+    #plt.colorbar(format="%+2.f")
     plt.title(title)
     plt.show()
 
@@ -26,9 +27,7 @@ def extract_and_plot(audio_data, frameSize, hopSize, title):
     stft_audio = librosa.stft(audio, n_fft = frameSize, hop_length = hopSize)
     y_audio = np.abs(stft_audio) ** 2
     plot_spectrogram(title+' linear', y_audio, sample_rate, hopSize)
-
-    # added: scale by max
-    y_log_audio = librosa.power_to_db(y_audio, ref=np.max)  
+    y_log_audio = librosa.power_to_db(y_audio)
     plot_spectrogram(title+' log', y_log_audio, sample_rate, hopSize)
     plot_spectrogram(title+' log and y_axis log', y_log_audio, sample_rate, hopSize, y_axis = "log")
 
