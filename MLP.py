@@ -9,6 +9,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torchsummary as summary
 import numpy as np
 import random
 from sklearn.model_selection import train_test_split    
@@ -40,21 +41,22 @@ save_kaggle_submission_as = os.getcwd() + os.sep + f"kaggle_{num_mfcc}2.csv"
 
 ### Hyper-Parameters
 
-seed_random = True
-train_size = 0.80     
+SEED_RANDOM = True
+TRAIN_SIZE = 0.80     
 
-max_iterations = 50  # number of propagation cycles
+MAX_ITERATIONS = 50  # number of propagation cycles
 
-learning_rate=0.001
-penalty = 0.001        # L2 regularization
+LEARNING_RATE=0.001
+PENALTY = 0.001        # L2 regularization
 
 # new stuff
-batch_size = 32
-hidden_size = 64
+BATCH_SIZE = 32
+HIDDEN_SIZE = 64
 
+DROP_OUT_RATE = 0.2
 ### Adapted from Prof. Trilce's MLP notebook
 class MLP(pl.LightningModule):
-    def __init__(self, input_size, hidden_size, output_size, dropout_rate=0.2):
+    def __init__(self, input_size, hidden_size, output_size, dropout_rate=DROP_OUT_RATE):
         super(MLP, self).__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)           # biases are added internally 
         self.fc2 = nn.Linear(hidden_size, output_size)          # "fc" = "fully connected" (dense)
@@ -101,18 +103,18 @@ class MLP(pl.LightningModule):
         print(f"Validation Loss: {self.trainer.callback_metrics['val_loss'].item()}, Validation Accuracy: {100 * self.trainer.callback_metrics['val_acc'].item():.2f}%")
 
     def configure_optimizers(self):
-        optimizer = optim.Adam(self.parameters(), lr=learning_rate, weight_decay=penalty)
+        optimizer = optim.Adam(self.parameters(), lr=LEARNING_RATE, weight_decay=PENALTY)
         return optimizer
 
 
 ### Seed for reproducibility
-if seed_random:
+if SEED_RANDOM:
     random.seed(0) # Python
 
     np.random.seed(0) # NumPy
 
     torch.manual_seed(0) # PyTorch
-    torch.backends.cudnn.deterministic = True
+    #torch.backends.cudnn.deterministic = True # hurts performance
     torch.backends.cudnn.benchmark = False
 
 ### Load MFCC and LABEL training data
@@ -139,12 +141,12 @@ y = y_mfcc      # labels are numbers: 0 thru 9
 
 ### Split X and Y into training and validation datasets
 
-X_train, X_test_val, y_train, y_test_val = train_test_split(X, y, train_size=train_size, random_state=0, stratify=y)
+X_train, X_test_val, y_train, y_test_val = train_test_split(X, y, train_size=TRAIN_SIZE, random_state=0, stratify=y)
 
 # Standardize: (X-mean(X))/std(X)
 scaler = StandardScaler() 
 X_train = scaler.fit_transform(X_train) 
-X_test_val = scaler.transform(X_test_val) 
+X_test_val = scaler.transform(X_test_val)       # Note: Standardize by X_train's mean/std
 
 ### Split validation dataset further into test and validation 
 X_test, X_val, y_test, y_val = train_test_split(X_test_val, y_test_val, train_size=0.8, random_state=0, stratify=y_test_val)
@@ -155,25 +157,26 @@ val_dataset = TensorDataset(torch.tensor(X_val, dtype=torch.float32), torch.tens
 test_dataset = TensorDataset(torch.tensor(X_test, dtype=torch.float32), torch.tensor(y_test, dtype=torch.long))    
 
 ### Data loaders
-batch_size=batch_size   # e.g., 32
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=batch_size)
-test_loader = DataLoader(test_dataset, batch_size=batch_size)
+BATCH_SIZE=BATCH_SIZE   # e.g., 32
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
+test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
 
 
 ### Adapted from Prof. Trilce's notebook (barebones MLP) 
 
 ### Model
 input_size = X_train.shape[1]           # input layer size is the number of mfccs, e.g., 13
-hidden_size = hidden_size               # hiddlen layer size, e.g., 64
+HIDDEN_SIZE = HIDDEN_SIZE               # hiddlen layer size, e.g., 64
 output_size = len(np.unique(y_labels))  # output layer size is the number of classes, e.g., 10
 
-model = MLP(input_size, hidden_size, output_size)
+model = MLP(input_size, HIDDEN_SIZE, output_size)
 print(model)
 
 ### Train
-trainer = pl.Trainer(max_epochs=max_iterations, logger=CSVLogger(save_dir="logs/"))
+trainer = pl.Trainer(max_epochs=MAX_ITERATIONS, logger=CSVLogger(save_dir="logs/"))
 trainer.fit(model, train_loader, val_loader)
+
 
 ### Test
 test1 = trainer.test(model, dataloaders=test_loader)
@@ -236,7 +239,7 @@ if 1:
     ### Network architecture
 
     # device='meta' -> no memory is consumed for visualization
-    model_graph = draw_graph(model, input_size=(batch_size, input_size), device='meta')
+    model_graph = draw_graph(model, input_size=(BATCH_SIZE, input_size), device='meta')
     if show_graphs:
         model_graph.visual_graph
     if save_graphs:
