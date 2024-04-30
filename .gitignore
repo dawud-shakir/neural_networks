@@ -3,8 +3,8 @@
 
 # But not these files...
 !.gitignore
-!stuff/MLP.py
-!stuff/CNN.py
+!./stuff/MLP.py
+!./stuff/CNN.py
 # etc...
 
 **/.DS_Store
