@@ -1,12 +1,10 @@
-# Ignore everything
-*
-*/
-/*
+# Ignore everything: files and folders
+/* 
 
 # But not these files...
 !.gitignore
-!MLP.py
-!CNN.py
+!/stuff/MLP.py
+!/stuff/CNN.py
 # etc...
 
 
