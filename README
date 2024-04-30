@@ -1,0 +1,17 @@
+create_and_save_specs
+
+read_specs
+
+    Finding Spectrograms: os.walk() recursively finds all files in the "spectrogram" directory.
+
+    Converting Images to Tensors: transforms.Grayscale() ensures a single channel (grayscale), and transforms.ToTensor() converts the image to a PyTorch tensor.
+    Reading Back in All Spectrograms: The list of spectrogram file paths are read, each file is converted to a tensor, and store it for further processing or analysis.
+
+
+stft_vs_melody.py: 
+
+This approach allows you to read back in the saved spectrogram images, converting them into tensors suitable for use with PyTorch and other machine learning frameworks.
+
+Hyperparams
+dropout rate 
+weight decay (optimizer) -- clips weight
