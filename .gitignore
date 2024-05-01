@@ -5,6 +5,8 @@
 !.gitignore
 !MLP.py
 !CNN.py
+!create_and_save_spectrograms.py
+!Sound_to_CNN.py
 # etc...
 
 # ...even if they are in subdirectories
