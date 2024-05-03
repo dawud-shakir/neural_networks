@@ -1,4 +1,4 @@
-# README (TODO)
+# README (TODO: latex)
 
 
 MLP.py
@@ -11,4 +11,4 @@ CNN.py
 
 
 
-Trainer.py
+Pretrained.py
