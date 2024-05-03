@@ -35,7 +35,7 @@ class MetricsCollectionCallback(pl.Callback):
 # Hypers
 
 
-MAX_ITER = 3    # also 10
+MAX_ITER = 1    # also 10
 
 
 # (AU)dio file to Mel spectrogram

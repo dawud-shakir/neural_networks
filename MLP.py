@@ -231,8 +231,15 @@ if 1:
     del metrics["step"]
     metrics.set_index("epoch", inplace=True)
     #print(metrics.head())
+    
     if SHOW_GRAPHS:
-        sn.relplot(data=metrics[['train_acc_epoch','val_acc','train_loss_epoch','val_loss']], kind="line")
+        # Create a scatter plot with `relplot`
+        
+        # Adjust the layout to prevent overlap
+        plot_plot = sn.relplot(data=metrics[['train_acc_epoch','val_acc','train_loss_epoch','val_loss']], kind="line")
+        plot_plot.fig.suptitle("MLP")
+        plot_plot.tight_layout()
+
     #if SAVE_PLOTS:
         #sn.savefig(SAVE_FIG1_AS)
 
@@ -241,7 +248,7 @@ if 1:
     # device='meta' -> no memory is consumed for visualization
     model_graph = draw_graph(model, input_size=(BATCH_SIZE, input_size), device='meta')
     if SHOW_GRAPHS:
-        model_graph.visual_graph
+         model_graph.visual_graph
     if SAVE_PLOTS:
         model_graph.visual_graph.render(filername=SAVE_FIG2_AS)
     ### Gradient propagation
