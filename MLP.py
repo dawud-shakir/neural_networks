@@ -31,28 +31,27 @@ github = "https://raw.githubusercontent.com/dawud-shakir/logistic_regression/mai
 ### Number of MFCCs per sample (13 or 128)
 num_mfcc = 13
 
-show_graphs, save_graphs = True, False
-save_fig1_as = "loss.png" # graph of log loss
-save_fig3_as = "architecture.png" # graph of architecture
-save_fig3_as = "gradient.png" # graph of gradient 
+SHOW_GRAPHS = 1
+SAVE_PLOTS = 1
+SAVE_PATH = os.getcwd() + "/plots/"
+SAVE_FIG1_AS = SAVE_PATH + "MLP_acc_loss.png" # graph of log loss
+SAVE_FIG2_AS = SAVE_PATH + "MLP_architecture.png" # graph of architecture
+SAVE_FIG3_AS = SAVE_PATH + "MLP_gradient.png" # graph of gradient 
 
-predict_kaggle_dataset = True
-save_kaggle_submission_as = os.getcwd() + os.sep + f"kaggle_{num_mfcc}2.csv" 
+PREDICT_KAGGLE_DATASET = False   # for kaggle test set
+SAVE_KAGGLE_SUBMISSION_AS = SAVE_PATH + f"MLP_kaggle_{num_mfcc}.csv" 
 
 ### Hyper-Parameters
 
 SEED_RANDOM = True
 TRAIN_SIZE = 0.80     
-
-MAX_ITERATIONS = 50  # number of propagation cycles
-
+MAX_ITERATIONS = 50  # number of back-and-forward cycles
 LEARNING_RATE=0.001
-PENALTY = 0.001        # L2 regularization
+PENALTY = 0.001        #  
 
 # new stuff
 BATCH_SIZE = 32
 HIDDEN_SIZE = 64
-
 DROP_OUT_RATE = 0.2
 ### Adapted from Prof. Trilce's MLP notebook
 class MLP(pl.LightningModule):
@@ -181,7 +180,7 @@ trainer.fit(model, train_loader, val_loader)
 ### Test
 test1 = trainer.test(model, dataloaders=test_loader)
 
-if predict_kaggle_dataset:
+if PREDICT_KAGGLE_DATASET:
 
     ### Load Kaggle dataset
     df_kaggle = pd.read_csv(github + os.sep + f"kaggle_mfcc_{num_mfcc}.csv")
@@ -201,6 +200,7 @@ if predict_kaggle_dataset:
         predictions = unique_labels[numbered_preds]                  # outputs are predictions to labels
 
     ### Build submission
+    
     files_in_test_dir = pd.read_csv(github + os.sep + "list_test.txt", header=None)   # from data/test/
     
     kaggle_submission = pd.DataFrame()
@@ -211,8 +211,8 @@ if predict_kaggle_dataset:
     print(kaggle_submission)
 
     ### Write to csv
-    kaggle_submission.to_csv(save_kaggle_submission_as, index=False)  # no index for submission file
-    print("Kaggle submission file:", save_kaggle_submission_as)
+    kaggle_submission.to_csv(SAVE_KAGGLE_SUBMISSION_AS, index=False)  # no index for submission file
+    print("Kaggle submission file:", SAVE_KAGGLE_SUBMISSION_AS)
 
 
 
@@ -231,19 +231,19 @@ if 1:
     del metrics["step"]
     metrics.set_index("epoch", inplace=True)
     #print(metrics.head())
-    if show_graphs:
+    if SHOW_GRAPHS:
         sn.relplot(data=metrics[['train_acc_epoch','val_acc','train_loss_epoch','val_loss']], kind="line")
-    if save_graphs:
-        sn.savefig(save_fig1_as)
+    #if SAVE_PLOTS:
+        #sn.savefig(SAVE_FIG1_AS)
 
     ### Network architecture
 
     # device='meta' -> no memory is consumed for visualization
     model_graph = draw_graph(model, input_size=(BATCH_SIZE, input_size), device='meta')
-    if show_graphs:
+    if SHOW_GRAPHS:
         model_graph.visual_graph
-    if save_graphs:
-        pass
+    if SAVE_PLOTS:
+        model_graph.visual_graph.render(filername=SAVE_FIG2_AS)
     ### Gradient propagation
 
     X,Y = next(iter(test_loader))
@@ -252,8 +252,8 @@ if 1:
     yhat = model(X)
 
     gradient_graph = make_dot(yhat.mean(), params=dict(model.named_parameters()))
-    if save_graphs:
-        gradient_graph.render(filename=save_fig3_as)
+    if SAVE_PLOTS:
+        gradient_graph.render(filename=SAVE_FIG3_AS)
 
     plt.show()
 exit()

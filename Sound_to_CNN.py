@@ -1,16 +1,18 @@
+# Sound_to_CNN.py
+
 # Convert sound to 2D CNN images, 
 # train using Pytorch and predict test set. 
 
 
 # This Python 3 environment comes with many helpful analytics libraries installed
 # It is defined by the kaggle/python docker image: https://github.com/kaggle/docker-python
-# For example, here's several helpful packages to load in 
 
-import numpy as np # linear algebra
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 
-# Input data files are available in the "../input/" directory.
-# For example, running this (by clicking run or pressing Shift+Enter) will list the files in the input directory
+import numpy as np # algebra
+import pandas as pd # data processing
+
+# Audio files for training in the "data/train" directory.
+
 
 import numpy as np 
 import pandas as pd
@@ -21,7 +23,8 @@ import librosa.display
 import IPython.display as ipd
 
 import matplotlib.pyplot as plt
-print(os.listdir("../input"))
+
+print(os.listdir(os.getcwd() + "/data/train"))
 
 
 
@@ -259,7 +262,8 @@ class CnnTransferNet(nn.Module):
         # add 2nd hidden layer, with relu activation function
         Features = self.fc2(Features)
         return Features
-Init model:
+    
+# Create model
 model = CnnAudioNet(NumClasses)
 if train_on_gpu:
     model.cuda()
@@ -291,6 +295,7 @@ CnnAudioNet(
   (dropout): Dropout(p=0.25)
   (Bat1): BatchNorm1d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
 )
+
 #Create Dataset:
 #abelsDict = dict(zip(Fils,one_hot))
 labelsDict_train = dict(zip(train_x,train_y))
@@ -480,9 +485,3 @@ Output_all_DF =pd.DataFrame(columns=Cl,data = Dataout)
 Output_all_DF['fname'] = Names
 Output_all_DF.to_csv('submission.csv', index=False)
 Output_all_DF.head()
-Chirp_and_tweet	Hi-hat	Walk_and_footsteps	Keys_jangling	Cricket	Zipper_(clothing)	Accelerating_and_revving_and_vroom	Acoustic_guitar	Female_singing	Writing	Sink_(filling_or_washing)	Sigh	Skateboard	Church_bell	Fart	Waves_and_surf	Gasp	Microwave_oven	Clapping	Gurgling	Frying_(food)	Scissors	Hiss	Toilet_flush	Electric_guitar	Sneeze	Purr	Chink_and_clink	Traffic_noise_and_roadway_noise	Bark	Bicycle_bell	Gong	Cutlery_and_silverware	Squeak	Screaming	Strum	Crowd	Fill_(with_liquid)	Knock	Slam	...	Tap	Child_speech_and_kid_speaking	Cheering	Race_car_and_auto_racing	Cupboard_open_or_close	Run	Dishes_and_pots_and_pans	Male_singing	Drawer_open_or_close	Computer_keyboard	Raindrop	Whispering	Shatter	Accordion	Female_speech_and_woman_speaking	Finger_snapping	Buzz	Printer	Bus	Motorcycle	Marimba_and_xylophone	Water_tap_and_faucet	Drip	Chewing_and_mastication	Harmonica	Yell	Burping_and_eructation	Meow	Bathtub_(filling_or_washing)	Applause	Car_passing_by	Glockenspiel	Crackle	Trickle_and_dribble	Mechanical_fan	Bass_guitar	Stream	Male_speech_and_man_speaking	Bass_drum	fname
-0	0.028487	0.027844	0.032224	0.113843	0.028028	0.035055	0.010620	0.005572	0.005470	0.024496	0.032933	0.031237	0.016457	0.007411	0.018344	0.011141	0.014786	0.046774	0.016522	0.029564	0.008643	0.018480	0.012803	0.015202	0.010898	0.033181	0.061771	0.026338	0.009488	0.022607	0.016411	0.009409	0.049610	0.037735	0.019231	0.005662	0.009992	0.014750	0.024764	0.023390	...	0.021701	0.020010	0.014929	4.683665e-03	0.032478	0.030491	0.023382	0.010705	0.080178	0.035622	0.045601	0.038099	0.032189	0.011613	0.039320	0.033508	0.009872	0.011684	0.015217	0.012337	0.038650	0.027374	0.031217	0.062876	0.008656	0.032481	0.017872	0.026738	0.015008	0.015567	0.010800	0.010213	0.062539	0.031236	0.021677	0.010749	0.008074	0.023878	0.022971	cb4391c5.wav
-1	0.024022	0.011533	0.014695	0.021431	0.013886	0.014279	0.014731	0.001770	0.002876	0.011455	0.027568	0.013022	0.007871	0.009477	0.015415	0.020527	0.005563	0.022921	0.019746	0.012611	0.012304	0.012097	0.016659	0.023358	0.014105	0.018945	0.036824	0.013195	0.023725	0.017558	0.011811	0.013174	0.019094	0.014813	0.011817	0.004303	0.019381	0.012783	0.018742	0.007559	...	0.010124	0.006766	0.045385	4.894889e-03	0.016106	0.012862	0.022520	0.009402	0.019440	0.016012	0.015873	0.018501	0.026858	0.014734	0.009289	0.030116	0.012930	0.015889	0.024771	0.024860	0.054968	0.051295	0.010497	0.031880	0.006634	0.009424	0.009982	0.013243	0.027603	0.041034	0.050375	0.011081	0.014569	0.015291	0.023429	0.017647	0.024817	0.015880	0.017142	c72e8acd.wav
-2	0.015488	0.008253	0.026712	0.017428	0.019624	0.018439	0.030629	0.000992	0.002712	0.013334	0.026900	0.016465	0.009851	0.007620	0.014869	0.026949	0.006555	0.018095	0.013229	0.018197	0.008485	0.013718	0.021925	0.019253	0.005593	0.008536	0.024712	0.005516	0.037297	0.012180	0.005684	0.008925	0.017207	0.015077	0.011601	0.003488	0.040675	0.015744	0.011798	0.005564	...	0.004609	0.005330	0.057955	6.308925e-03	0.019838	0.016726	0.011420	0.012238	0.034002	0.014456	0.010381	0.020203	0.017028	0.008448	0.008176	0.010331	0.015124	0.017221	0.032162	0.034683	0.018510	0.038815	0.006008	0.042106	0.004288	0.009329	0.007072	0.007147	0.021110	0.061139	0.056432	0.003324	0.023429	0.010931	0.024309	0.003494	0.014521	0.011552	0.006699	c011423b.wav
-3	0.012534	0.013471	0.001670	0.007261	0.000940	0.004085	0.000488	0.032378	0.000311	0.001349	0.001842	0.002803	0.002174	0.006952	0.002641	0.000858	0.005531	0.021799	0.003621	0.004782	0.002310	0.001646	0.000524	0.001205	0.024021	0.006038	0.061609	0.031008	0.002640	0.042721	0.242064	0.014079	0.019282	0.003291	0.002391	0.021208	0.001013	0.001340	0.041978	0.004925	...	0.003871	0.002672	0.002349	1.343427e-04	0.008323	0.001170	0.005434	0.000655	0.011034	0.003244	0.002494	0.007301	0.027050	0.003298	0.001263	0.012288	0.002018	0.003011	0.001420	0.003308	0.074423	0.006437	0.005340	0.001044	0.002368	0.004115	0.012582	0.012370	0.001723	0.000850	0.000658	0.274215	0.002719	0.006064	0.001405	0.089563	0.001878	0.012666	0.010598	636df665.wav
-4	0.000761	0.000585	0.000008	0.000094	0.000002	0.000021	0.000001	0.007536	0.000003	0.000004	0.000013	0.000012	0.000037	0.000492	0.000025	0.000003	0.000190	0.000738	0.000039	0.000041	0.000026	0.000018	0.000002	0.000008	0.004472	0.000055	0.001314	0.003703	0.000047	0.002951	0.068758	0.002424	0.000373	0.000029	0.000029	0.004290	0.000002	0.000006	0.002716	0.000064	...	0.000066	0.000025	0.000021	3.315759e-07	0.000440	0.000004	0.000162	0.000006	0.000066	0.000014	0.000010	0.000161	0.002030	0.000078	0.000004	0.000831	0.000047	0.000027	0.000009	0.000072	0.017180	0.000109	0.000103	0.000005	0.000135	0.000053	0.000365	0.000250	0.000017	0.000001	0.000003	0.187061	0.000017	0.000088	0.000005	0.245794	0.000020	0.000234	0.000267	bdf07823.wav
