@@ -1,5 +1,11 @@
 # README (TODO: convert to latex)
 
+Our MFCC13 and MFCC128 datasets can be accessed:
+
+The "data/" folder is available from professor Trilce's course website or at 
+
+github = "https://raw.githubusercontent.com/dawud-shakir/logistic_regression/main/data/"
+
 ---- Parameters -----
 
 
@@ -35,7 +41,7 @@ BATCH_SIZE = 32 # [1, 8, 16, 32, 128, 256]
 
 LEARNING_RATE = [1e-5, 1e-1]    
 
-### MOMENTUM
+### MOMENTUM 
 # Momentum is used to maintain a direction during training.
 # Typical Range: 0 to 0.9 allows the model to explore the impact 
 # of momentum without leading to excessive oscillations.
