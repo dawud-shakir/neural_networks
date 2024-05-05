@@ -66,3 +66,47 @@ CNN.py
 
 
 Pretrained.py
+
+
+
+
+
+Our Kaggle submissions were created thusly:
+
+\begin{code}
+
+    if PREDICT_KAGGLE_DATASET:
+
+        ### Load Kaggle dataset
+        df_kaggle = pd.read_csv(github + os.sep + f"kaggle_mfcc_{num_mfcc}.csv")
+        X_kaggle = df_kaggle.iloc[:, 0:]  # unknown kaggle testing data
+        
+        X_kaggle = StandardScaler().fit_transform(X_kaggle)   # standardize
+
+        kaggle_dataset = TensorDataset(torch.tensor(X_kaggle, dtype=torch.float32)) # convert to tensor dataset
+
+        ### Predict using MLP
+        
+        model.eval()  # because model is already trained, switch to evaluation mode (inplace)
+
+        with torch.no_grad():  # disable gradient calculation, only need predictions
+            numbered_preds = model(kaggle_dataset.tensors[0])            # pass Kaggle dataset to model
+            numbered_preds = numbered_preds.argmax(dim=1).tolist()       # predicted numbers (0..9)
+            predictions = unique_labels[numbered_preds]                  # outputs are predictions to labels
+
+        ### Build submission
+        files_in_test_dir = pd.read_csv(github + os.sep + "list_test.txt", header=None)   # from data/test/
+        
+        kaggle_submission = pd.DataFrame()
+        kaggle_submission.insert(0, "id", files_in_test_dir)
+        kaggle_submission.insert(1, "class", predictions)
+
+        print(len(predictions), "Kaggle predictions:")
+        print(kaggle_submission)
+
+        ### Write to csv
+        kaggle_submission.to_csv(save_kaggle_submission_as, index=False)  # no index for submission file
+        print("Kaggle submission file:", save_kaggle_submission_as)
+
+\end{code}
+
