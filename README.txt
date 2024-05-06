@@ -63,7 +63,10 @@ TEST_RATIO = 0.0
 
 MLP.py
 
-
+    Model Definition: An MLP class with an initializer, forward propagation, evaluation functions, training, validation, and test steps.
+    Dataset Preparation: Preprocessing and splitting the dataset into training, validation, and test sets.
+    Training and Testing: Training the MLP using a Trainer and then evaluating performance on test data, including calculating confidence intervals for accuracy.
+    Plotting: Generating plots for accuracy and loss metrics.
 
 
 CNN.py
