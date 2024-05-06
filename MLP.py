@@ -1,69 +1,82 @@
-# MLP.py (Multi Layer Perceptron)
-
 import numpy as np
 import pandas as pd
-from pathlib import Path
-
 import os
-
+import random
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchsummary as summary
-import numpy as np
-import random
-from sklearn.model_selection import train_test_split    
-from sklearn.preprocessing import StandardScaler  # for standardization
-from sklearn.metrics import classification_report, accuracy_score, precision_score, recall_score, f1_score
 from torch.utils.data import DataLoader, TensorDataset
 import pytorch_lightning as pl
 from pytorch_lightning.loggers import CSVLogger
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-# 
-# Need these files in root directory: 
-#        mfcc_13_labels.csv -or- mfcc_128_labels.cvs            (known train dataset)
-#        kaggle_mfcc_13.csv -or- kaggle_mfcc_128.csv            (unknown test dataset)
-#        list_test.txt                                          (from data/test)
-#
 
-github = "https://raw.githubusercontent.com/dawud-shakir/logistic_regression/main/in"   # same mfccs as logistic regression
 
-### Number of MFCCs per sample (13 or 128)
-num_mfcc = 13
+# Constants and hyperparameters
+MODEL = "MLP"
 
-SHOW_GRAPHS = 1
-SAVE_PLOTS = 1
-SAVE_PATH = os.getcwd() + "/plots/"
-SAVE_FIG1_AS = SAVE_PATH + "MLP_acc_loss.png" # graph of log loss
-SAVE_FIG2_AS = SAVE_PATH + "MLP_architecture.png" # graph of architecture
-SAVE_FIG3_AS = SAVE_PATH + "MLP_gradient.png" # graph of gradient 
-
-PREDICT_KAGGLE_DATASET = False   # for kaggle test set
-SAVE_KAGGLE_SUBMISSION_AS = SAVE_PATH + f"MLP_kaggle_{num_mfcc}.csv" 
-
-### Hyper-Parameters
-
-SEED_RANDOM = True
-TRAIN_SIZE = 0.80     
-MAX_ITERATIONS = 50  # number of back-and-forward cycles
-LEARNING_RATE=0.001
-PENALTY = 0.001        #  
-
-# new stuff
 BATCH_SIZE = 32
 HIDDEN_SIZE = 64
 DROP_OUT_RATE = 0.2
-### Adapted from Prof. Trilce's MLP notebook
+LEARNING_RATE = 0.001
+PENALTY = 0.001
+MAX_ITERATIONS = 50
+TRAIN_SIZE = 0.80
+SEED_RANDOM = True
+
+# Seeding for reproducibility
+if SEED_RANDOM:
+    random.seed(0)  # Python
+    np.random.seed(0)  # NumPy
+    torch.manual_seed(0)  # PyTorch
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+# Data loading and preparation
+github = "https://raw.githubusercontent.com/dawud-shakir/logistic_regression/main/in"
+num_mfcc = 13
+df = pd.read_csv(github + os.sep + f"mfcc_{num_mfcc}_labels.csv")
+
+# Features (MFCC) and labels
+X = df.iloc[:, :-1]
+y_labels = df.iloc[:, -1]
+all_classes = np.unique(y_labels)
+
+# Encode labels into unique numbers for multi-class classification
+y_mfcc = np.zeros(y_labels.shape)
+for idx, label in enumerate(all_classes):
+    y_mfcc[y_labels == label] = idx
+
+# Standardization and data split
+X_train, X_test_val, y_train, y_test_val = train_test_split(X, y_mfcc, train_size=TRAIN_SIZE, stratify=y_mfcc, random_state=0)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test_val = scaler.transform(X_test_val)
+
+X_test, X_val, y_test, y_val = train_test_split(X_test_val, y_test_val, train_size=0.8, stratify=y_test_val, random_state=0)
+
+# Create datasets and data loaders
+train_dataset = TensorDataset(torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train, dtype=torch.long))
+val_dataset = TensorDataset(torch.tensor(X_val, dtype=torch.float32), torch.tensor(y_val, dtype=torch.long))
+test_dataset = TensorDataset(torch.tensor(X_test, dtype=torch.float32), torch.tensor(y_test, dtype=torch.long))
+
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
+test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
+
+# Define MLP model with PyTorch Lightning
 class MLP(pl.LightningModule):
     def __init__(self, input_size, hidden_size, output_size, dropout_rate=DROP_OUT_RATE):
         super(MLP, self).__init__()
-        self.fc1 = nn.Linear(input_size, hidden_size)           # biases are added internally 
-        self.fc2 = nn.Linear(hidden_size, output_size)          # "fc" = "fully connected" (dense)
-        self.dropout = nn.Dropout(dropout_rate)                 # randomly disable "this many" per cycle
-        self.relu = nn.ReLU()                                   # clip negative values to 0
-        self.cost = nn.CrossEntropyLoss()                       # cross entropy between y-true and y-predict (loss)
-
-        self.mse_cost = nn.MSELoss()                            # mean square error (loss)
+        self.fc1 = nn.Linear(input_size, hidden_size)  # Fully connected layer 1
+        self.fc2 = nn.Linear(hidden_size, output_size)  # Fully connected layer 2
+        self.dropout = nn.Dropout(dropout_rate)  # Dropout
+        self.relu = nn.ReLU()  # Activation function
+        self.cost = nn.CrossEntropyLoss()  # Loss function
 
     def forward(self, x):
         x = self.relu(self.fc1(x))
@@ -72,195 +85,126 @@ class MLP(pl.LightningModule):
         return x
 
     def evaluate(self, batch, stage=None):
-        
-        x, y = batch    # x-true and y-true
-        y_hat = self.forward(x)  # y-predict
-        loss = self.cost(y_hat, y) # cross-entroopy 
+        x, y = batch
+        y_hat = self.forward(x)
+        loss = self.cost(y_hat, y)
         preds = torch.argmax(y_hat, dim=1)
-        acc = (preds == y).float().mean()
- 
+        accuracy = (preds == y).float().mean()
+
+         
         if stage:
             self.log(f"{stage}_loss", loss, on_epoch=True, prog_bar=False, logger=True) 
-            self.log(f"{stage}_acc", acc, on_epoch=True, prog_bar=True, logger=True)
-            
-        return loss
+            self.log(f"{stage}_acc", accuracy, on_epoch=True, prog_bar=False, logger=True)
 
+        return loss, preds, accuracy
 
     def training_step(self, batch, batch_idx):
-        return(self.evaluate(batch, "train"))
+        loss, _, _ = self.evaluate(batch, "Train")
+        return loss
 
     def validation_step(self, batch, batch_idx):
-        return(self.evaluate(batch, "val"))
-
-    def test_step(self, batch, batch_idx):
-        return(self.evaluate(batch, "test"))
-
-    def on_train_epoch_end(self):
-        print(f"Train Loss: {self.trainer.callback_metrics['train_loss'].item()}, Train Accuracy: {100 * self.trainer.callback_metrics['train_acc'].item():.2f}%")
-
-    def on_validation_epoch_end(self):
-        print(f"Validation Loss: {self.trainer.callback_metrics['val_loss'].item()}, Validation Accuracy: {100 * self.trainer.callback_metrics['val_acc'].item():.2f}%")
+        loss, _, _ = self.evaluate(batch, "Val")
+        return loss
 
     def configure_optimizers(self):
         optimizer = optim.Adam(self.parameters(), lr=LEARNING_RATE, weight_decay=PENALTY)
         return optimizer
 
 
-### Seed for reproducibility
-if SEED_RANDOM:
-    random.seed(0) # Python
+# This extension is just for storing predictions and labels during testing
+class CustomMLP(MLP):
+    def on_test_start(self): 
+       
+        self.all_preds = []
+        self.all_labels = []
+        self.accuracies = []
+        self.losses = []
+       
 
-    np.random.seed(0) # NumPy
+    def test_step(self, batch, batch_idx):
+        loss, preds, accuracy = self.evaluate(batch)
+        # Store predictions, labels, accuracy, and loss for later use
+        self.all_preds.append(preds)
+        self.all_labels.append(batch[1])
+        self.accuracies.append(accuracy)
+        self.losses.append(loss)
+        return {"loss": loss, "preds": preds, "labels": batch[1]}
 
-    torch.manual_seed(0) # PyTorch
-    #torch.backends.cudnn.deterministic = True # hurts performance
-    torch.backends.cudnn.benchmark = False
+    def on_test_epoch_end(self):
+        # Concatenate all predictions and labels
+        all_preds = torch.cat(self.all_preds).cpu().numpy()
+        all_labels = torch.cat(self.all_labels).cpu().numpy()
 
-### Load MFCC and LABEL training data
-df = pd.read_csv(github + os.sep + f"mfcc_{num_mfcc}_labels.csv")      # same as 2nd project 
+        # Calculate precision, recall, and F1-score for each class
+        class_report = classification_report(all_labels, all_preds, target_names=all_classes, output_dict=True)
 
-### MFCCs 
-X = df.iloc[:,:-1]
-X_mfcc = X
+        print("Classification Report:")
+        for class_name, metrics in class_report.items():
+            if isinstance(metrics, dict):  # Ignore 'accuracy', which is a float
+                print(
+                    f"Class '{class_name}': Precision={metrics['precision']:.2f}, Recall={metrics['recall']:.2f}, F1-Score={metrics['f1-score']:.2f}"
+                )
 
-### Labels to unique numbers for PyTorch
-y_labels = df.iloc[:,-1]   # "blues", "rock", etc.
-unique_labels = np.unique(y_labels)
+        # Calculate overall test accuracy
+        overall_accuracy = torch.mean(torch.stack(self.accuracies)).item() * 100
+        print(f"Overall Test Accuracy: {overall_accuracy:.2f}%")
 
-y_ids = np.zeros(y_labels.shape)
-for id,label in enumerate(unique_labels):
-    y_ids[y_labels==label] = id 
-    
-y_mfcc = y_ids
+        # Calculate overall test loss
+        overall_loss = torch.mean(torch.stack(self.losses)).item()
+        print(f"Overall Test Loss: {overall_loss:.4f}")
 
-### X and Y 
+        # Visualize the metrics for precision, recall, F1-Score, and loss
+        class_names = list(class_report.keys())
+        precision_values = [class_report[class_name]["precision"] for class_name in class_names if isinstance(class_report[class_name], dict)]
+        recall_values = [class_report[class_name]["recall"] for class_name in class_names if isinstance(class_report[class_name], dict)]
+        f1_values = [class_report[class_name]["f1-score"] for class_name in class_names if isinstance(class_report[class_name], dict)]
 
-X = X_mfcc      # mfccs
-y = y_mfcc      # labels are numbers: 0 thru 9
-
-### Split X and Y into training and validation datasets
-
-X_train, X_test_val, y_train, y_test_val = train_test_split(X, y, train_size=TRAIN_SIZE, random_state=0, stratify=y)
-
-# Standardize: (X-mean(X))/std(X)
-scaler = StandardScaler() 
-X_train = scaler.fit_transform(X_train) 
-X_test_val = scaler.transform(X_test_val)       # Note: Standardize by X_train's mean/std
-
-### Split validation dataset further into test and validation 
-X_test, X_val, y_test, y_val = train_test_split(X_test_val, y_test_val, train_size=0.8, random_state=0, stratify=y_test_val)
-
-### Datasets
-train_dataset = TensorDataset(torch.tensor(X_train, dtype=torch.float32), torch.tensor(y_train, dtype=torch.long))
-val_dataset = TensorDataset(torch.tensor(X_val, dtype=torch.float32), torch.tensor(y_val, dtype=torch.long))
-test_dataset = TensorDataset(torch.tensor(X_test, dtype=torch.float32), torch.tensor(y_test, dtype=torch.long))    
-
-### Data loaders
-BATCH_SIZE=BATCH_SIZE   # e.g., 32
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE)
-test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
+        plt.figure(figsize=(10, 6))
+        plt.bar(class_names[:-1], precision_values, label="Precision")
+        plt.bar(class_names[:-1], recall_values, alpha=0.7, label="Recall")  # Transparency for overlapping bars
+        plt.bar(class_names[:-1], f1_values, alpha=0.5, label="F1-Score")  # Transparency for overlapping bars
+        plt.xlabel("Classes")
+        plt.ylabel("Metric Values")
+        plt.title(f"Precision, Recall, and F1-Score for Each Class ({MODEL})")
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
 
 
-### Adapted from Prof. Trilce's notebook (barebones MLP) 
 
-### Model
-input_size = X_train.shape[1]           # input layer size is the number of mfccs, e.g., 13
-HIDDEN_SIZE = HIDDEN_SIZE               # hiddlen layer size, e.g., 64
-output_size = len(np.unique(y_labels))  # output layer size is the number of classes, e.g., 10
+# Initialize and train the model
+INPUT_SIZE = X_train.shape[1]
+OUTPUT_SIZE = len(all_classes)
 
-model = MLP(input_size, HIDDEN_SIZE, output_size)
-print(model)
+model = CustomMLP(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
 
-### Train
 trainer = pl.Trainer(max_epochs=MAX_ITERATIONS, logger=CSVLogger(save_dir="logs/"))
 trainer.fit(model, train_loader, val_loader)
 
+# Test and get precision, recall, and F1-score
+trainer.test(model, dataloaders=test_loader)
 
-### Test
-test1 = trainer.test(model, dataloaders=test_loader)
+# Plotting training and validation metrics
+metrics = pd.read_csv(f"{trainer.logger.log_dir}/metrics.csv")
+metrics.set_index("epoch", inplace=True)
 
-if PREDICT_KAGGLE_DATASET:
+plt.figure(figsize=(10, 6))
 
-    ### Load Kaggle dataset
-    df_kaggle = pd.read_csv(github + os.sep + f"kaggle_mfcc_{num_mfcc}.csv")
-    X_kaggle = df_kaggle.iloc[:, 0:]  # unknown kaggle testing data
-    
-    X_kaggle = StandardScaler().fit_transform(X_kaggle)   # standardize
-
-    kaggle_dataset = TensorDataset(torch.tensor(X_kaggle, dtype=torch.float32)) # convert to tensor dataset
-
-    ### Predict using MLP
-    
-    model.eval()  # because model is already trained, switch to evaluation mode (inplace)
-
-    with torch.no_grad():  # disable gradient calculation, only need predictions
-        numbered_preds = model(kaggle_dataset.tensors[0])            # pass Kaggle dataset to model
-        numbered_preds = numbered_preds.argmax(dim=1).tolist()       # predicted numbers (0..9)
-        predictions = unique_labels[numbered_preds]                  # outputs are predictions to labels
-
-    ### Build submission
-    
-    files_in_test_dir = pd.read_csv(github + os.sep + "list_test.txt", header=None)   # from data/test/
-    
-    kaggle_submission = pd.DataFrame()
-    kaggle_submission.insert(0, "id", files_in_test_dir)
-    kaggle_submission.insert(1, "class", predictions)
-
-    print(len(predictions), "Kaggle predictions:")
-    print(kaggle_submission)
-
-    ### Write to csv
-    kaggle_submission.to_csv(SAVE_KAGGLE_SUBMISSION_AS, index=False)  # no index for submission file
-    print("Kaggle submission file:", SAVE_KAGGLE_SUBMISSION_AS)
+# Plot training and validation accuracy
+sns.lineplot(data=metrics, x=metrics.index, y='Train_acc_epoch', color='r', label='Training Accuracy')
+sns.lineplot(data=metrics, x=metrics.index, y='Val_acc', color='orange', label='Validation Accuracy')
+plt.ylabel("Accuracy")
 
 
+# Plot training and validation loss on a secondary y-axis
+ax2 = plt.gca().twinx()
+sns.lineplot(data=metrics, x=metrics.index, y='Train_loss_epoch', ax=ax2, color='b', label='Training Loss')
+sns.lineplot(data=metrics, x=metrics.index, y='Val_loss', ax=ax2, color='g', label='Validation Loss')
 
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
 
-import pandas as pd
-import seaborn as sn  # for model accuracy and loss plots              
-import matplotlib.pyplot as plt 
+plt.title("Training and Validation Metrics (MLP)")
 
-from torchview import draw_graph    # model architecture
-from torchviz import make_dot       # gradient propagation
-
-if 1:
-    ### Plot loss and accuracy
-
-    metrics = pd.read_csv(f"{trainer.logger.log_dir}/metrics.csv")
-    del metrics["step"]
-    metrics.set_index("epoch", inplace=True)
-    #print(metrics.head())
-    
-    if SHOW_GRAPHS:
-        # Create a scatter plot with `relplot`
-        
-        # Adjust the layout to prevent overlap
-        plot_plot = sn.relplot(data=metrics[['train_acc_epoch','val_acc','train_loss_epoch','val_loss']], kind="line")
-        plot_plot.fig.suptitle("MLP")
-        plot_plot.tight_layout()
-
-    #if SAVE_PLOTS:
-        #sn.savefig(SAVE_FIG1_AS)
-
-    ### Network architecture
-
-    # device='meta' -> no memory is consumed for visualization
-    model_graph = draw_graph(model, input_size=(BATCH_SIZE, input_size), device='meta')
-    if SHOW_GRAPHS:
-         model_graph.visual_graph
-    if SAVE_PLOTS:
-        model_graph.visual_graph.render(filername=SAVE_FIG2_AS)
-    ### Gradient propagation
-
-    X,Y = next(iter(test_loader))
-    device = next(model.parameters()).device
-    X = X.to(device)
-    yhat = model(X)
-
-    gradient_graph = make_dot(yhat.mean(), params=dict(model.named_parameters()))
-    if SAVE_PLOTS:
-        gradient_graph.render(filename=SAVE_FIG3_AS)
-
-    plt.show()
-exit()
+plt.tight_layout()  # Avoid overlapping
+plt.show()
