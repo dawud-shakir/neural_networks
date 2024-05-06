@@ -19,6 +19,12 @@ import matplotlib.pyplot as plt
 # Constants and hyperparameters
 MODEL = "MLP"
 
+# Locally saved!
+SAVE_PATH = "/Users/a2024/Library/Mobile Documents/com~apple~CloudDocs/2024/CS529/Project 3/figures/"
+SAVE_EXT = ".svg"
+
+
+
 BATCH_SIZE = 32
 HIDDEN_SIZE = 64
 DROP_OUT_RATE = 0.2
@@ -168,7 +174,7 @@ class CustomMLP(MLP):
         plt.title(f"Precision, Recall, and F1-Score for Each Class ({MODEL})")
         plt.legend()
         plt.tight_layout()
-        plt.show()
+        plt.savefig(SAVE_PATH + MODEL + "2" + SAVE_EXT) 
 
 
 
@@ -207,4 +213,9 @@ plt.ylabel("Loss")
 plt.title("Training and Validation Metrics (MLP)")
 
 plt.tight_layout()  # Avoid overlapping
+
+
+plt.savefig(SAVE_PATH + MODEL + SAVE_EXT)
+
 plt.show()
+
