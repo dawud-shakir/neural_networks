@@ -200,7 +200,7 @@ plt.figure(figsize=(10, 6))
 sns.lineplot(data=metrics, x=metrics.index, y='Train_acc_epoch', color='r', label='Training Accuracy')
 sns.lineplot(data=metrics, x=metrics.index, y='Val_acc', color='orange', label='Validation Accuracy')
 plt.ylabel("Accuracy")
-
+plt.xlabel("Epochs")
 
 # Plot training and validation loss on a secondary y-axis
 ax2 = plt.gca().twinx()
