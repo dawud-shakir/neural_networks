@@ -1,5 +1,6 @@
 # README (TODO: convert to latex)
 
+We wrote our scripts in Python (instead of matlab or C) because the libraries we needed are easily accessed from Python (3.11).
 
 They include data loading, preprocessing, model definition, training, evaluation, and visualization functionalities.  After training, their test method is called on the trained model to make predictions on the test set.
        A cassification report (precision, recall, F1-score), overall test accuracy, and overall test loss are stored and metrics for each class are plotted.
@@ -13,6 +14,8 @@ This demo is a CNN model for audio classification.
 3. pretrained.py
 This demo is a pre-trained VGG16 model for audio classification.
 
+4. plots.py
+This script houses the plots for our project report. 
 
 
 Our MFCC13 and MFCC128 datasets can be accessed:
@@ -246,6 +249,33 @@ Additional Notes:
     Aggressive seeding (SEED_RANDOM) is used for reproducibility of the training process.
     A CSVLogger is used to track training and validation metrics during training.
     Plots for training and validation metrics are generated after training.
+
+
+plots.py
+
+
+This script generates visualizations for audio data, including waveforms and spectrograms.
+
+Functionalities:
+
+    Loads audio files from a specified directory (data/train).
+    Supports various audio genres (e.g., Blues, Classical, etc.).
+    Calculates Short-Time Fourier Transform (STFT) to represent the audio in the time-frequency domain.
+    Generates three types of spectrograms:
+        Linear spectrogram: Visualizes the raw frequency power over time.
+        Log spectrogram: Similar to linear but uses a logarithmic scale for better visualization of dynamic range.
+        Mel spectrogram: Emphasizes frequencies important for human hearing.
+    Plots the waveform (amplitude over time) for each audio file.
+    Optionally plots a sample spectrum showing the frequency content of a single time slice.
+
+Customization:
+
+    The script allows saving the generated figures as PNG images with adjustable resolution (DPI) in a user-defined path.
+
+Note:
+
+    We decided the linear spectrograms are not be essential for visualization in our report.
+
 
 
 
