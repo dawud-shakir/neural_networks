@@ -74,6 +74,49 @@ TRAIN_RATIO = 0.8       # 720
 VALIDATION_RATIO = 0.2  # 180
 TEST_RATIO = 0.0
 
+##################################################################
+
+
+Our Kaggle submissions were built thusly:
+
+\begin{code}
+
+    if PREDICT_KAGGLE_DATASET:
+
+        ### Load Kaggle dataset
+        df_kaggle = pd.read_csv(github + os.sep + f"kaggle_mfcc_{num_mfcc}.csv")
+        X_kaggle = df_kaggle.iloc[:, 0:]  # unknown kaggle testing data
+        
+        X_kaggle = StandardScaler().fit_transform(X_kaggle)   # standardize
+
+        kaggle_dataset = TensorDataset(torch.tensor(X_kaggle, dtype=torch.float32)) # convert to tensor dataset
+
+        ### Predict using MLP
+        
+        model.eval()  # because model is already trained, switch to evaluation mode (inplace)
+
+        with torch.no_grad():  # disable gradient calculation, only need predictions
+            numbered_preds = model(kaggle_dataset.tensors[0])            # pass Kaggle dataset to model
+            numbered_preds = numbered_preds.argmax(dim=1).tolist()       # predicted numbers (0..9)
+            predictions = unique_labels[numbered_preds]                  # outputs are predictions to labels
+
+        ### Build submission
+        files_in_test_dir = pd.read_csv(github + os.sep + "list_test.txt", header=None)   # from data/test/
+        
+        kaggle_submission = pd.DataFrame()
+        kaggle_submission.insert(0, "id", files_in_test_dir)
+        kaggle_submission.insert(1, "class", predictions)
+
+        print(len(predictions), "Kaggle predictions:")
+        print(kaggle_submission)
+
+        ### Write to csv
+        kaggle_submission.to_csv(save_kaggle_submission_as, index=False)  # no index for submission file
+        print("Kaggle submission file:", save_kaggle_submission_as)
+
+\end{code}
+
+
 
 
 MLP.py
@@ -165,46 +208,45 @@ Additional Notes:
 
 Pretrained.py
 
+The provided code implements a system for classifying audio recordings using a pre-trained VGG16 model fine-tuned on Mel spectrogram features. Here's a breakdown:
+
+Data Loading and Preprocessing:
+
+    Data Path: The script assumes audio files are stored in the data/train directory with a .au extension.
+    Librosa: It uses librosa to read audio files, extract Mel-frequency cepstral coefficients (MFCCs), and convert them to decibels (dB).
+    Label Encoding: Filenames are used as labels, and a LabelEncoder transforms them into numerical values.
+    Data Split: The script splits the data into training and validation sets using train_test_split from scikit-learn.
+    AudioDataset: A custom AudioDataset class loads and preprocesses audio files on the fly during training.
+        It truncates MFCCs to a specific shape ([128, 1290]).
+        It standardizes (z-scores) the features for better model performance.
+        It adds a channel dimension ([1, 128, 1290]) for the CNN.
+    AudioDataLoader: This class inherits from pl.LightningDataModule and handles splitting data and creating PyTorch dataloaders for training, validation, and testing.
+
+Model Architecture (Pre-trained VGG16):
+
+    The model is a CustomCNN class that inherits from pl.LightningModule.
+    It utilizes a pre-trained VGG16 model with weights frozen, meaning the weights are not updated during training.
+    Two convolutional layers with 32 and 64 filters are added on top of the pre-trained VGG16 features.
+    Max pooling layers are used for dimensionality reduction.
+    Dropout layers are used for regularization to prevent overfitting.
+    Fully connected layers are added after the convolutional layers to transform the features into a lower-dimensional space and then to the number of classes for classification.
+    The model uses ReLU activation in the convolutional and hidden layers and softmax activation in the output layer for multi-class classification.
+
+Training and Evaluation:
+
+    PyTorch Lightning: The script leverages PyTorch Lightning for training, validation, and testing.
+    Adam Optimizer: The Adam optimizer is used with a learning rate and weight decay for regularization.
+    Custom Evaluation: The CustomCNN class overrides methods to store predictions, labels, accuracy, and loss during testing for later evaluation.
+    Training Loop: The script defines training and validation steps that call the evaluate method to calculate loss and other metrics.
+    Testing: After training, predictions and metrics are calculated and displayed, including classification report, overall accuracy, and loss. Training and testing times are printed.
+
+Additional Notes:
+
+    The script defines constants and hyperparameters like MODEL, BATCH_SIZE, LEARNING_RATE, etc.
+    Aggressive seeding (SEED_RANDOM) is used for reproducibility of the training process.
+    A CSVLogger is used to track training and validation metrics during training.
+    Plots for training and validation metrics are generated after training.
 
 
 
-
-Our Kaggle submissions were created thusly:
-
-\begin{code}
-
-    if PREDICT_KAGGLE_DATASET:
-
-        ### Load Kaggle dataset
-        df_kaggle = pd.read_csv(github + os.sep + f"kaggle_mfcc_{num_mfcc}.csv")
-        X_kaggle = df_kaggle.iloc[:, 0:]  # unknown kaggle testing data
-        
-        X_kaggle = StandardScaler().fit_transform(X_kaggle)   # standardize
-
-        kaggle_dataset = TensorDataset(torch.tensor(X_kaggle, dtype=torch.float32)) # convert to tensor dataset
-
-        ### Predict using MLP
-        
-        model.eval()  # because model is already trained, switch to evaluation mode (inplace)
-
-        with torch.no_grad():  # disable gradient calculation, only need predictions
-            numbered_preds = model(kaggle_dataset.tensors[0])            # pass Kaggle dataset to model
-            numbered_preds = numbered_preds.argmax(dim=1).tolist()       # predicted numbers (0..9)
-            predictions = unique_labels[numbered_preds]                  # outputs are predictions to labels
-
-        ### Build submission
-        files_in_test_dir = pd.read_csv(github + os.sep + "list_test.txt", header=None)   # from data/test/
-        
-        kaggle_submission = pd.DataFrame()
-        kaggle_submission.insert(0, "id", files_in_test_dir)
-        kaggle_submission.insert(1, "class", predictions)
-
-        print(len(predictions), "Kaggle predictions:")
-        print(kaggle_submission)
-
-        ### Write to csv
-        kaggle_submission.to_csv(save_kaggle_submission_as, index=False)  # no index for submission file
-        print("Kaggle submission file:", save_kaggle_submission_as)
-
-\end{code}
 
