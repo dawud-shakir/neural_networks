@@ -1,5 +1,18 @@
 # README (TODO: convert to latex)
 
+
+They include data loading, preprocessing, model definition, training, evaluation, and visualization functionalities.  After training, their test method is called on the trained model to make predictions on the test set.
+       A cassification report (precision, recall, F1-score), overall test accuracy, and overall test loss are stored and metrics for each class are plotted.
+1. mlp.py: 
+
+2. cnn.py
+This script demonstrates a CNN-based approach for audio classification using PyTorch Lightning. 
+
+
+3. pretrained.py
+
+
+
 Our MFCC13 and MFCC128 datasets can be accessed:
 
 The "data/" folder is available from professor Trilce's course website or at 
@@ -63,15 +76,89 @@ TEST_RATIO = 0.0
 
 MLP.py
 
-    Model Definition: An MLP class with an initializer, forward propagation, evaluation functions, training, validation, and test steps.
-    Dataset Preparation: Preprocessing and splitting the dataset into training, validation, and test sets.
-    Training and Testing: Training the MLP using a Trainer and then evaluating performance on test data, including calculating confidence intervals for accuracy.
-    Plotting: Generating plots for accuracy and loss metrics.
+ This script creates and trains a multi-layer perceptron (MLP) model for classifying audio recordings using Mel-frequency cepstral coefficients (MFCCs).
+
+Data
+
+    The script loads MFCC features and labels from a CSV file.
+    It then splits the data into training, validation, and test sets, maintaining class distribution using stratification.
+    Standarization is applied to the features (MFCCs) before feeding them to the model.
+
+Model
+
+    The model is a multi-layer perceptron (MLP) with a single hidden layer.
+    The number of hidden units is set to a hyperparameter HIDDEN_SIZE.
+    Dropout is used for regularization to prevent overfitting (controlled by DROP_OUT_RATE).
+    The model uses ReLU activation in the hidden layer and softmax activation in the output layer for multi-class classification.
+
+Training
+
+    Adam optimizer is used with a learning rate (LEARNING_RATE) and weight decay (PENALTY) for regularization.
+    The script trains the model for a fixed number of epochs (MAX_ITERATIONS).
+    PyTorch Lightning is used for training and validation.
+    Early stopping or other regularization techniques are not explicitly included in this code.
+
+Evaluation
+
+    After training, the model is evaluated on the test set.
+    The script calculates precision, recall, and F1-score for each class using the classification_report function.
+    It also calculates overall test accuracy and loss.
+    Finally, the script plots the training and validation accuracy and loss curves.
+
+Key Points
+
+    This script focuses on building and training a basic MLP model for audio classification using MFCC features.
+    Hyperparameters like HIDDEN_SIZE, LEARNING_RATE, and DROP_OUT_RATE are set manually and could be optimized using techniques like grid search or random search.
+    The script doesn't include techniques like early stopping or learning rate scheduling, but these could be incorporated for better performance.
 
 
 CNN.py
 
 
+Convolutional Neural Network (CNN) for Audio Classification
+
+This script defines and trains a CNN model for classifying audio recordings using Mel-frequency cepstral coefficients (MFCCs).
+
+Data Loading and Preprocessing:
+
+    Data Path: The script assumes audio files are stored in the data/train directory with a .au extension.
+    Librosa: It uses the librosa library to read audio files, extract MFCC features, and convert them to decibels (dB).
+    Label Encoding: Filenames are used as labels, and a LabelEncoder transforms them into numerical values.
+    Data Split: The script splits the data into training and validation sets using train_test_split from scikit-learn.
+    Dataset and Dataloader: A custom AudioDataset class is defined to load and preprocess audio files on the fly during training.
+        It truncates MFCCs to a specific shape ([128, 1290]).
+        It standardizes (z-scores) the features for better model performance.
+        It adds a channel dimension ([1, 128, 1290]) for the CNN.
+        The AudioDataLoader class inherits from pl.LightningDataModule and handles splitting data into training, validation, and test sets using another round of train_test_split.
+
+Model Architecture (CNN):
+
+    The model is a CustomCNN class that inherits from pl.LightningModule.
+    It defines a typical CNN architecture with convolutional layers, pooling layers, and fully connected layers.
+        Convolutional layers: Two convolutional layers are used with 32 and 64 filters.
+        Pooling layers: Max pooling is used for dimensionality reduction.
+        Dropout layer: Dropout with a rate of 0.2 is used for regularization to prevent overfitting.
+        Fully connected layers: Two fully connected layers are used.
+            The first layer transforms the features from the convolutional layers into a lower-dimensional space (128).
+            The second layer has an output size equal to the number of classes for classification.
+    The model uses ReLU activation in the convolutional and hidden layers and softmax activation in the output layer for multi-class classification.
+
+Training and Evaluation:
+
+    PyTorch Lightning: The script leverages PyTorch Lightning for training and validation.
+    Adam Optimizer: The Adam optimizer is used with a learning rate (LEARNING_RATE) and weight decay (PENALTY) for regularization.
+    Evaluation Metrics: The evaluate method calculates loss, accuracy, and predictions on a batch.
+    Training Loop: The training_step and validation_step methods call the evaluate method to calculate loss on training and validation data, respectively.
+    Custom Evaluation for Testing: The CustomCNN class overrides the test_step method to store predictions, labels, accuracy, and loss during testing for later evaluation.
+  
+
+Additional Notes:
+
+    The script defines constants and hyperparameters like MODEL, CHANNELS, BATCH_SIZE, HIDDEN_SIZE, LEARNING_RATE, etc.
+    It uses aggressive seeding (SEED_RANDOM) to ensure reproducibility of the training process.
+    The script saves the training and validation metrics (metrics.csv) and plots them after training.
+    It also saves the final test performance metrics and model visualizations.
+    Training and testing times are printed for reference.
 
 
 Pretrained.py
