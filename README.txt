@@ -5,11 +5,13 @@ They include data loading, preprocessing, model definition, training, evaluation
        A cassification report (precision, recall, F1-score), overall test accuracy, and overall test loss are stored and metrics for each class are plotted.
 1. mlp.py: 
 
+
 2. cnn.py
-This script demonstrates a CNN-based approach for audio classification using PyTorch Lightning. 
+This demo is a CNN model for audio classification. 
 
 
 3. pretrained.py
+This demo is a pre-trained VGG16 model for audio classification.
 
 
 
