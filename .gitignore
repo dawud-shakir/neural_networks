@@ -2,10 +2,11 @@
 * 
 
 # But not these files...
-!.gitignore
-!MLP.py
-!CNN.py
-!Trainer.py
+!mlp.py
+!cnn.py
+!pretrained.py
+!plots.py
+!readme.md
 
 # etc...
 
